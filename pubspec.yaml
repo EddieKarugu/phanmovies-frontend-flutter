@@ -37,6 +37,9 @@ dependencies:
   dio: ^5.11.1
   flutter_secure_storage: ^10.3.3
   get: ^4.7.3
+  shared_preferences: ^2.5.5
+  icons_plus: ^5.0.0
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   flutter_test:
