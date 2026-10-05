@@ -1,10 +1,10 @@
-
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:phan_movies/apiServices/auth_service.dart';
 import 'package:phan_movies/pages/navigation.dart';
 import 'package:phan_movies/widgets/Input_field.dart';
 import 'package:phan_movies/widgets/auth_redirect.dart';
+import 'package:phan_movies/widgets/social_login_buttons.dart';
 
 class LoginPage extends StatefulWidget {
   final VoidCallback onGoToRegister;
@@ -21,7 +21,8 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
 
   Future<void> _login() async {
-    if (_usernameController.text.trim().isEmpty || _passwordController.text.trim().isEmpty) {
+    if (_usernameController.text.trim().isEmpty ||
+        _passwordController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Please enter both username and password')),
       );
@@ -40,13 +41,14 @@ class _LoginPageState extends State<LoginPage> {
         MaterialPageRoute(builder: (context) => NavigationPage()),
       );
     } on DioException catch (e) {
-      final message = e.response?.data['message'] ?? e.message ?? 'something went wrong';
-      if(!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      final message =
+          e.response?.data['message'] ?? e.message ?? 'something went wrong';
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } finally {
-      if(mounted) {
+      if (mounted) {
         setState(() {
           _isLoading = false;
         });
@@ -70,7 +72,6 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-
     final screenSize = MediaQuery.of(context).size;
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -176,12 +177,18 @@ class _LoginPageState extends State<LoginPage> {
                         foregroundColor: Colors.white,
                         minimumSize: Size(200, 50),
                       ),
-                      child: _isLoading? CircularProgressIndicator(
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        color: Colors.white)
-                      : Text('Login'),
+                      child: _isLoading
+                          ? CircularProgressIndicator(
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.primary,
+                              color: Colors.white,
+                            )
+                          : Text('Login'),
                     ),
                     const SizedBox(height: 30),
+                    SocialButtons(),
+                    const SizedBox(height: 20),
                     AuthRedirect(
                       description: "Don't hava an Account?",
                       redirectPage: "Sign Up",

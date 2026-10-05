@@ -1,10 +1,9 @@
-
-
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:phan_movies/apiServices/auth_service.dart';
 import 'package:phan_movies/widgets/Input_field.dart';
 import 'package:phan_movies/widgets/auth_redirect.dart';
+import 'package:phan_movies/widgets/social_login_buttons.dart';
 
 class RegisterPage extends StatefulWidget {
   final VoidCallback onGoToLogin;
@@ -30,7 +29,7 @@ class _RegisterPageState extends State<RegisterPage> {
     super.initState();
   }
 
-  bool _isLoading = false;  
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -42,37 +41,45 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Future<void> _register() async {
-    if(_usernameController.text.trim().isEmpty){
+    if (_usernameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Username is required')));
+      return;
+    }
+    if (_emailController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Username is required')),
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text('Email is required'),
+        ),
       );
       return;
     }
-    if(_emailController.text.trim().isEmpty){
+    if (_passwordController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(behavior: SnackBarBehavior.floating,
-          content: Text('Email is required')),
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text('Password is required'),
+        ),
       );
       return;
     }
-    if(_passwordController.text.trim().isEmpty){
+    if (_confirmPasswordController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(behavior: SnackBarBehavior.floating,
-          content: Text('Password is required')),
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text('Confirm password is required'),
+        ),
       );
       return;
     }
-    if(_confirmPasswordController.text.trim().isEmpty){
+    if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(behavior: SnackBarBehavior.floating,
-          content: Text('Confirm password is required')),
-      );
-      return;
-    }
-    if(_passwordController.text != _confirmPasswordController.text){
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(behavior: SnackBarBehavior.floating,
-          content: Text('Passwords do not match')),
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text('Passwords do not match'),
+        ),
       );
       return;
     }
@@ -87,18 +94,19 @@ class _RegisterPageState extends State<RegisterPage> {
         password: _passwordController.text.trim(),
         passwordConfirmation: _confirmPasswordController.text.trim(),
       );
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Registration successful')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Registration successful')));
       widget.onGoToLogin();
     } on DioException catch (e) {
-      final message = e.response?.data['message'] ?? e.message ?? 'something went wrong';
-      if(!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      final message =
+          e.response?.data['message'] ?? e.message ?? 'something went wrong';
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } finally {
-      if(mounted) {
+      if (mounted) {
         setState(() {
           _isLoading = false;
         });
@@ -152,7 +160,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: Theme.of(context).colorScheme.primary,
-                  ),  
+                  ),
                   gradient: RadialGradient(
                     colors: [
                       Colors.red.withValues(alpha: 0.9),
@@ -167,7 +175,10 @@ class _RegisterPageState extends State<RegisterPage> {
 
             SafeArea(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 32,
+                ),
                 child: Column(
                   children: [
                     const SizedBox(height: 40),
@@ -222,17 +233,22 @@ class _RegisterPageState extends State<RegisterPage> {
                         foregroundColor: Colors.white,
                         minimumSize: const Size(200, 50),
                       ),
-                      child: _isLoading ?  CircularProgressIndicator(
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        color: Colors.white,
-                      ) : const Text('Register'),
+                      child: _isLoading
+                          ? CircularProgressIndicator(
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.primary,
+                              color: Colors.white,
+                            )
+                          : const Text('Register'),
                     ),
                     const SizedBox(height: 24),
-
+                    SocialButtons(),
+                    const SizedBox(height: 20),
                     AuthRedirect(
                       description: 'Already have an account?',
                       redirectPage: 'Login',
-                      onRedirect: (){
+                      onRedirect: () {
                         widget.onGoToLogin();
                       },
                     ),

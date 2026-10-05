@@ -1,5 +1,6 @@
 import "package:flutter/material.dart";
 import "package:phan_movies/apiServices/api_client.dart";
+import "package:phan_movies/apiServices/social_auth_service.dart";
 import "package:phan_movies/controllers/theme_controller.dart";
 import "package:phan_movies/pages/Authentication.dart";
 
@@ -8,8 +9,10 @@ import "Initializers/shared_preferences.dart";
 void main() async {
   ApiClient.init();
   WidgetsFlutterBinding.ensureInitialized();
-  SharedPrefs.Init();
-  ThemeController.phanTheme.value = SharedPrefs.userSharedprefs?.getInt('PhanMoviesTheme') ?? 2;
+  await SharedPrefs.Init();
+  await SocialAuthService.init();
+  ThemeController.phanTheme.value =
+      SharedPrefs.userSharedprefs?.getInt('PhanMoviesTheme') ?? 2;
   runApp(MyApp());
 }
 
@@ -22,7 +25,7 @@ class MyApp extends StatelessWidget {
       valueListenable: ThemeController.phanTheme,
       builder: (context, currentTheme, child) {
         return MaterialApp(
-          home: const  Authentication(),
+          home: const Authentication(),
           theme: ThemeController.lightTheme,
           darkTheme: ThemeController.darkTheme,
           themeMode: currentTheme == 0
