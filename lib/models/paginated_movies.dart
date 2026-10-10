@@ -24,4 +24,15 @@ class PaginatedMovies {
           .toList(),
     );
   }
+
+  /// An empty result set. Used as a placeholder when a fetch fails,
+  /// so the UI has something valid to render instead of null.
+  factory PaginatedMovies.empty() {
+    return PaginatedMovies(
+      page: 1,
+      totalPages: 1,
+      totalResults: 0,
+      results: const [],
+    );
+  }
 }
