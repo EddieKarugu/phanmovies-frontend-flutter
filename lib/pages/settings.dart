@@ -1,6 +1,10 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:phan_movies/Initializers/shared_preferences.dart';
+import 'package:phan_movies/apiServices/auth_service.dart';
 import 'package:phan_movies/controllers/theme_controller.dart';
+import 'package:phan_movies/models/user.dart';
+import 'package:phan_movies/widgets/account_section.dart';
 
 class Settings extends StatefulWidget {
   const Settings({super.key});
@@ -11,6 +15,37 @@ class Settings extends StatefulWidget {
 
 class _SettingsState extends State<Settings> {
   int groupValue = SharedPrefs.userSharedprefs?.getInt('PhanMoviesTheme') ?? 2;
+
+  bool _isloading = false;
+  User? _user;
+
+  Future<void> _loadUser() async {
+    setState(() {
+      _isloading = true;
+    });
+    try {
+      final user = await AuthService.getCurrentUser();
+      if (!mounted) return;
+      setState(() {
+        _user = user;
+        _isloading = false;
+      });
+    } on DioException catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isloading = false;
+      });
+    }
+    setState(() {
+      _isloading = false;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,32 +59,7 @@ class _SettingsState extends State<Settings> {
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-            Container(
-              child: Column(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    radius: 40,
-                    child: Text(
-                      'P',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 25,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    'Phantom',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            AccountSection(user: _user, isLoading: _isloading),
             const SizedBox(height: 10),
             const Text(
               'Theme Settings',
@@ -64,7 +74,7 @@ class _SettingsState extends State<Settings> {
                   groupValue = value!;
                   SharedPrefs.userSharedprefs?.setInt('PhanMoviesTheme', value);
                   ThemeController.phanTheme.value = value;
-                   print(SharedPrefs.userSharedprefs?.getInt('PhanMoviesTheme'));
+                  print(SharedPrefs.userSharedprefs?.getInt('PhanMoviesTheme'));
                 });
               },
             ),
@@ -77,7 +87,7 @@ class _SettingsState extends State<Settings> {
                   groupValue = value!;
                   SharedPrefs.userSharedprefs?.setInt('PhanMoviesTheme', value);
                   ThemeController.phanTheme.value = value;
-                    print(SharedPrefs.userSharedprefs?.getInt('PhanMoviesTheme'));
+                  print(SharedPrefs.userSharedprefs?.getInt('PhanMoviesTheme'));
                 });
               },
             ),
@@ -90,7 +100,7 @@ class _SettingsState extends State<Settings> {
                   groupValue = value!;
                   SharedPrefs.userSharedprefs?.setInt('PhanMoviesTheme', value);
                   ThemeController.phanTheme.value = value;
-                   print(SharedPrefs.userSharedprefs?.getInt('PhanMoviesTheme'));
+                  print(SharedPrefs.userSharedprefs?.getInt('PhanMoviesTheme'));
                 });
               },
             ),

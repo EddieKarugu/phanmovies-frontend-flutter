@@ -24,7 +24,7 @@ class SocialAuthService {
       clientId: null,
 
       // Required for authorizeServer() — the "Web" OAuth client ID.
-      serverClientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
+      serverClientId: '557285742927-1vdc4v5p4m75amfpcgsjs4qlsd2codm6.apps.googleusercontent.com',
     );
 
     _googleInitialized = true;
@@ -37,31 +37,44 @@ class SocialAuthService {
   /// Returns a Sanctum token string on success, or null if the user
   /// cancelled or an error occurred.
   static Future<String?> signInWithGoogle() async {
-    await init(); // safe — no-op if already initialized
-
+    await init();
+  
     try {
-      // 1. Show the native Google sign-in sheet
+      print('[Google] 1. authenticate()');
       final GoogleSignInAccount account = await _google.authenticate();
-
-      // 2. Request a server auth code for Laravel
+      print('[Google]    got account: ${account.email}');
+  
+      print('[Google] 2. authorizeServer()');
       final GoogleSignInServerAuthorization? serverAuth =
           await account.authorizationClient.authorizeServer(
         <String>['email', 'profile'],
       );
-
-      if (serverAuth == null) return null;
-
-      // 3. Send the code to Laravel
+  
+      if (serverAuth == null) {
+        print('[Google]    serverAuth was NULL');
+        return null;
+      }
+  
+      print('[Google]    got serverAuthCode: ${serverAuth.serverAuthCode.substring(0, 20)}...');
+  
+      print('[Google] 3. POST to Laravel');
       final res = await _dio.post('/auth/google', data: {
         'server_auth_code': serverAuth.serverAuthCode,
       });
-
+  
+      print('[Google]    Laravel status: ${res.statusCode}');
+      print('[Google]    Laravel body: ${res.data}');
+  
       return res.data['token'] as String?;
     } on DioException catch (e) {
-      print('Google backend error: ${e.message}');
+      print('[Google] DioException');
+      print('[Google]    status: ${e.response?.statusCode}');
+      print('[Google]    body: ${e.response?.data}');
+      print('[Google]    message: ${e.message}');
       return null;
-    } catch (e) {
-      print('Google sign-in error: $e');
+    } catch (e, stack) {
+      print('[Google] Unexpected error: $e');
+      print('[Google] Stack: $stack');
       return null;
     }
   }

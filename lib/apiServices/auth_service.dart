@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:phan_movies/models/user.dart';
 import 'api_client.dart';
 
 class AuthService {
@@ -11,12 +12,15 @@ class AuthService {
     required String password,
     required String passwordConfirmation,
   }) async {
-    final res = await _dio.post('/register', data: {
-      'name': name,
-      'email': email,
-      'password': password,
-      'password_confirmation': passwordConfirmation,
-    });
+    final res = await _dio.post(
+      '/register',
+      data: {
+        'name': name,
+        'email': email,
+        'password': password,
+        'password_confirmation': passwordConfirmation,
+      },
+    );
 
     await _storage.write(key: 'token', value: res.data['token']);
   }
@@ -25,10 +29,10 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-    final res = await _dio.post('/login', data: {
-      'email': email,
-      'password': password,
-    });
+    final res = await _dio.post(
+      '/login',
+      data: {'email': email, 'password': password},
+    );
 
     await _storage.write(key: 'token', value: res.data['token']);
   }
@@ -47,5 +51,17 @@ class AuthService {
       // Even if the server call fails, clear locally
     }
     await _storage.delete(key: 'token');
+  }
+
+  static Future<User?> getCurrentUser() async {
+    try {
+      final response = await _dio.get('/me');
+      return User.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        return null;
+      }
+      rethrow;
+    }
   }
 }
