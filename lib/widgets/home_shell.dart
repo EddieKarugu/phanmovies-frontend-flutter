@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:phan_movies/models/media_tab.dart';
@@ -17,13 +16,21 @@ class HomeShell extends StatefulWidget {
 }
 
 class _HomeShellState extends State<HomeShell> {
+  // Trending data (per tab)
   final Map<String, PaginatedMovies?> _trendingByTab = {};
-  final Map<String, PaginatedMovies?> _browseByTab = {};
   final Map<String, bool> _loadingTrendingByTab = {};
+
+  // Browse data — accumulates across pages (per tab)
+  final Map<String, List<Movie>> _browseItemsByTab = {};
+  final Map<String, int> _browsePageByTab = {};
+  final Map<String, int> _browseTotalPagesByTab = {};
   final Map<String, bool> _loadingBrowseByTab = {};
+  final Map<String, bool> _loadingMoreByTab = {};
 
   int _tabIndex = 0;
+  final ScrollController _scrollController = ScrollController();
 
+  // Carousel
   late final PageController _carouselController;
   Timer? _autoScrollTimer;
   int _carouselIndex = 0;
@@ -34,6 +41,7 @@ class _HomeShellState extends State<HomeShell> {
   void initState() {
     super.initState();
     _carouselController = PageController(viewportFraction: 0.85);
+    _scrollController.addListener(_onScroll);
     _loadTab(_currentTab);
   }
 
@@ -41,16 +49,63 @@ class _HomeShellState extends State<HomeShell> {
   void dispose() {
     _autoScrollTimer?.cancel();
     _carouselController.dispose();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     super.dispose();
   }
 
-  // ─────────────────────────────────────────────
-  // DATA
-  // ─────────────────────────────────────────────
+ 
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+
+    final position = _scrollController.position;
+    final trigger = position.maxScrollExtent - 400; // load 400px before end
+
+    if (position.pixels >= trigger) {
+      _loadNextPage();
+    }
+  }
+
+  Future<void> _loadNextPage() async {
+    final tab = _currentTab;
+    final key = tab.label;
+
+    // Guard: already loading, or no more pages
+    if (_loadingMoreByTab[key] == true) return;
+    if (_loadingBrowseByTab[key] == true) return;
+
+    final currentPage = _browsePageByTab[key] ?? 1;
+    final totalPages = _browseTotalPagesByTab[key] ?? 1;
+
+    if (currentPage >= totalPages) return;
+
+    final nextPage = currentPage + 1;
+
+    setState(() => _loadingMoreByTab[key] = true);
+
+    try {
+      final data = await tab.fetchBrowse(page: nextPage);
+
+      if (!mounted) return;
+      setState(() {
+        _browseItemsByTab[key] = [
+          ...(_browseItemsByTab[key] ?? []),
+          ...data.results,
+        ];
+        _browsePageByTab[key] = nextPage;
+        _browseTotalPagesByTab[key] = data.totalPages;
+        _loadingMoreByTab[key] = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingMoreByTab[key] = false);
+    }
+  }
 
   void _loadTab(MediaTab tab) {
     final key = tab.label;
 
+    // Trending — one shot, no pagination
     if (_trendingByTab[key] == null && _loadingTrendingByTab[key] != true) {
       _loadingTrendingByTab[key] = true;
       tab.fetchTrending(page: 1).then((data) {
@@ -71,18 +126,23 @@ class _HomeShellState extends State<HomeShell> {
       });
     }
 
-    if (_browseByTab[key] == null && _loadingBrowseByTab[key] != true) {
+    // Browse — first page
+    if (_browseItemsByTab[key] == null && _loadingBrowseByTab[key] != true) {
       _loadingBrowseByTab[key] = true;
       tab.fetchBrowse(page: 1).then((data) {
         if (!mounted) return;
         setState(() {
-          _browseByTab[key] = data;
+          _browseItemsByTab[key] = data.results;
+          _browsePageByTab[key] = 1;
+          _browseTotalPagesByTab[key] = data.totalPages;
           _loadingBrowseByTab[key] = false;
         });
       }).catchError((_) {
         if (!mounted) return;
         setState(() {
-          _browseByTab[key] = PaginatedMovies.empty();
+          _browseItemsByTab[key] = [];
+          _browsePageByTab[key] = 1;
+          _browseTotalPagesByTab[key] = 1;
           _loadingBrowseByTab[key] = false;
         });
       });
@@ -99,10 +159,7 @@ class _HomeShellState extends State<HomeShell> {
     _loadTab(widget.tabs[index]);
   }
 
-  // ─────────────────────────────────────────────
-  // CAROUSEL
-  // ─────────────────────────────────────────────
-
+  
   void _startAutoScroll(List<Movie> movies) {
     _autoScrollTimer?.cancel();
     if (movies.isEmpty) return;
@@ -120,9 +177,6 @@ class _HomeShellState extends State<HomeShell> {
     });
   }
 
-  // ─────────────────────────────────────────────
-  // BUILD
-  // ─────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -149,9 +203,7 @@ class _HomeShellState extends State<HomeShell> {
                 },
               ),
             ),
-
             const SizedBox(height: 8),
-
             Expanded(child: _buildTabView()),
           ],
         ),
@@ -162,19 +214,26 @@ class _HomeShellState extends State<HomeShell> {
   Widget _buildTabView() {
     final key = _currentTab.label;
     final trending = _trendingByTab[key];
-    final browse = _browseByTab[key];
+    final browseItems = _browseItemsByTab[key] ?? [];
     final loadingTrending = _loadingTrendingByTab[key] ?? true;
     final loadingBrowse = _loadingBrowseByTab[key] ?? true;
+    final loadingMore = _loadingMoreByTab[key] ?? false;
 
     return RefreshIndicator(
       onRefresh: () async {
         setState(() {
           _trendingByTab.remove(key);
-          _browseByTab.remove(key);
+          _browseItemsByTab.remove(key);
+          _browsePageByTab.remove(key);
+          _browseTotalPagesByTab.remove(key);
+          _loadingTrendingByTab.remove(key);
+          _loadingBrowseByTab.remove(key);
+          _loadingMoreByTab.remove(key);
         });
         _loadTab(_currentTab);
       },
       child: CustomScrollView(
+        controller: _scrollController,
         slivers: [
           SliverToBoxAdapter(
             child: SizedBox(
@@ -184,9 +243,7 @@ class _HomeShellState extends State<HomeShell> {
                   : _buildCarousel(trending?.results ?? []),
             ),
           ),
-
           const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -198,9 +255,9 @@ class _HomeShellState extends State<HomeShell> {
               ),
             ),
           ),
-
           const SliverToBoxAdapter(child: SizedBox(height: 12)),
 
+          // Grid
           if (loadingBrowse)
             const SliverFillRemaining(
               hasScrollBody: false,
@@ -217,9 +274,18 @@ class _HomeShellState extends State<HomeShell> {
                   childAspectRatio: 0.55,
                 ),
                 delegate: SliverChildBuilderDelegate(
-                  (context, i) => _buildPosterTile(browse?.results[i]),
-                  childCount: browse?.results.length ?? 0,
+                  (context, i) => _buildPosterTile(browseItems[i]),
+                  childCount: browseItems.length,
                 ),
+              ),
+            ),
+
+          // Loading more indicator
+          if (loadingMore)
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: CircularProgressIndicator()),
               ),
             ),
 
@@ -257,9 +323,7 @@ class _HomeShellState extends State<HomeShell> {
     );
   }
 
-  Widget _buildPosterTile(Movie? movie) {
-    if (movie == null) return const SizedBox.shrink();
-
+  Widget _buildPosterTile(Movie movie) {
     return GestureDetector(
       onTap: () {},
       child: Column(
