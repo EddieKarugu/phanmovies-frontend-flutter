@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:phan_movies/models/media_tab.dart';
 import 'package:phan_movies/models/movie.dart';
 import 'package:phan_movies/models/paginated_movies.dart';
+import 'package:phan_movies/pages/details_page.dart';
 import 'package:phan_movies/widgets/action_button.dart';
 import 'package:phan_movies/widgets/carousel_card.dart';
 
@@ -54,7 +55,6 @@ class _HomeShellState extends State<HomeShell> {
     super.dispose();
   }
 
- 
   void _onScroll() {
     if (!_scrollController.hasClients) return;
 
@@ -108,44 +108,50 @@ class _HomeShellState extends State<HomeShell> {
     // Trending — one shot, no pagination
     if (_trendingByTab[key] == null && _loadingTrendingByTab[key] != true) {
       _loadingTrendingByTab[key] = true;
-      tab.fetchTrending(page: 1).then((data) {
-        if (!mounted) return;
-        setState(() {
-          _trendingByTab[key] = data;
-          _loadingTrendingByTab[key] = false;
-        });
-        if (_tabIndex == widget.tabs.indexOf(tab)) {
-          _startAutoScroll(data.results);
-        }
-      }).catchError((_) {
-        if (!mounted) return;
-        setState(() {
-          _trendingByTab[key] = PaginatedMovies.empty();
-          _loadingTrendingByTab[key] = false;
-        });
-      });
+      tab
+          .fetchTrending(page: 1)
+          .then((data) {
+            if (!mounted) return;
+            setState(() {
+              _trendingByTab[key] = data;
+              _loadingTrendingByTab[key] = false;
+            });
+            if (_tabIndex == widget.tabs.indexOf(tab)) {
+              _startAutoScroll(data.results);
+            }
+          })
+          .catchError((_) {
+            if (!mounted) return;
+            setState(() {
+              _trendingByTab[key] = PaginatedMovies.empty();
+              _loadingTrendingByTab[key] = false;
+            });
+          });
     }
 
     // Browse — first page
     if (_browseItemsByTab[key] == null && _loadingBrowseByTab[key] != true) {
       _loadingBrowseByTab[key] = true;
-      tab.fetchBrowse(page: 1).then((data) {
-        if (!mounted) return;
-        setState(() {
-          _browseItemsByTab[key] = data.results;
-          _browsePageByTab[key] = 1;
-          _browseTotalPagesByTab[key] = data.totalPages;
-          _loadingBrowseByTab[key] = false;
-        });
-      }).catchError((_) {
-        if (!mounted) return;
-        setState(() {
-          _browseItemsByTab[key] = [];
-          _browsePageByTab[key] = 1;
-          _browseTotalPagesByTab[key] = 1;
-          _loadingBrowseByTab[key] = false;
-        });
-      });
+      tab
+          .fetchBrowse(page: 1)
+          .then((data) {
+            if (!mounted) return;
+            setState(() {
+              _browseItemsByTab[key] = data.results;
+              _browsePageByTab[key] = 1;
+              _browseTotalPagesByTab[key] = data.totalPages;
+              _loadingBrowseByTab[key] = false;
+            });
+          })
+          .catchError((_) {
+            if (!mounted) return;
+            setState(() {
+              _browseItemsByTab[key] = [];
+              _browsePageByTab[key] = 1;
+              _browseTotalPagesByTab[key] = 1;
+              _loadingBrowseByTab[key] = false;
+            });
+          });
     }
   }
 
@@ -159,7 +165,6 @@ class _HomeShellState extends State<HomeShell> {
     _loadTab(widget.tabs[index]);
   }
 
-  
   void _startAutoScroll(List<Movie> movies) {
     _autoScrollTimer?.cancel();
     if (movies.isEmpty) return;
@@ -176,7 +181,6 @@ class _HomeShellState extends State<HomeShell> {
       );
     });
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -248,10 +252,10 @@ class _HomeShellState extends State<HomeShell> {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
-                'Popular',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                'More',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -316,7 +320,17 @@ class _HomeShellState extends State<HomeShell> {
             title: movie.title,
             releaseDate: movie.releaseDate,
             genre: movie.genres,
-            onTap: () {},
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => MovieDetailsPage(
+                    id: movie.id,
+                    mediaType: movie.mediaType,
+                    preview: movie,
+                  ),
+                ),
+              );
+            },
           ),
         );
       },
@@ -325,7 +339,17 @@ class _HomeShellState extends State<HomeShell> {
 
   Widget _buildPosterTile(Movie movie) {
     return GestureDetector(
-      onTap: () {},
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => MovieDetailsPage(
+              id: movie.id,
+              mediaType: movie.mediaType,
+              preview: movie,
+            ),
+          ),
+        );
+      },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

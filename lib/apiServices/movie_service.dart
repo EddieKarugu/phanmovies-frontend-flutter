@@ -1,5 +1,7 @@
 
+import 'package:phan_movies/models/movie_details.dart';
 import 'package:phan_movies/models/paginated_movies.dart';
+import 'package:phan_movies/models/season_details.dart';
 import 'api_client.dart';
 
 class MovieService {
@@ -160,5 +162,20 @@ class MovieService {
       queryParameters: {'page': page},
     );
     return PaginatedMovies.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  static Future<MovieDetails> movieDetails(int id) async {
+    final res = await _dio.get('/movies/$id/details');
+    return MovieDetails.fromJson(res.data as Map<String, dynamic>);
+  }
+  
+  static Future<MovieDetails> tvDetails(int id) async {
+    final res = await _dio.get('/tv/$id/details');
+    return MovieDetails.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  static Future<SeasonDetails> seasonDetails(int tvId, int seasonNumber) async {
+    final res = await _dio.get('/tv/$tvId/season/$seasonNumber');
+    return SeasonDetails.fromJson(res.data as Map<String, dynamic>);
   }
 }

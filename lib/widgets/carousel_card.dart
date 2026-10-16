@@ -16,7 +16,8 @@ class CarouselCard extends StatelessWidget {
     required this.imageUrl,
     required this.onTap,
     this.rating,
-    required this.genre, required this.releaseDate,
+    required this.genre,
+    required this.releaseDate,
   });
 
   @override
@@ -25,73 +26,100 @@ class CarouselCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(20),
         height: 200,
-        width: screenSize.width * .8,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.all(Radius.circular(14)),
-        ),
+        width: screenSize.width * 0.8,
+        margin: const EdgeInsets.symmetric(horizontal: 6),
         child: ClipRRect(
-          borderRadius: BorderRadius.all(Radius.circular(14)),
+          borderRadius: BorderRadius.circular(14),
           child: Stack(
             fit: StackFit.expand,
             children: [
+              // Image fills the entire card
               imageUrl != null
                   ? CachedNetworkImage(
                       imageUrl: imageUrl!,
                       fit: BoxFit.cover,
-                      placeholder: (context, url) => Center(
+                      placeholder: (_, __) => Center(
                         child: CircularProgressIndicator(
                           color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
-                      errorWidget: (context, url, error) =>
-                          const Icon(Icons.error),
+                      errorWidget: (_, __, ___) => Container(
+                        color: Colors.grey[900],
+                        child: const Icon(Icons.error),
+                      ),
                     )
                   : Container(
-                      color: Colors.grey,
-                      child: Icon(Icons.movie, size: 40),
+                      color: Colors.grey[900],
+                      child: const Icon(Icons.movie, size: 40),
                     ),
+
+              // Dark gradient so text is readable
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, Colors.black87],
+                  ),
+                ),
+              ),
+
+              // Info overlay
               Positioned(
-                bottom: 0,
-                left: 20,
-                right: 0,
+                left: 14,
+                right: 14,
+                bottom: 12,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       title,
-                      style: TextStyle(
-                        fontSize: 20,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 6),
                     Row(
                       children: [
                         Icon(
                           Icons.star,
                           color: ThemeController.ratingGold,
-                          size: 20,
+                          size: 16,
                         ),
-                        Text(rating.toString().substring(0, 3), style: TextStyle(fontWeight: FontWeight.bold),),
-                        const SizedBox(width: 5),
-                        Text(releaseDate ?? ''),
+                        const SizedBox(width: 4),
+                        Text(
+                          rating != null ? rating!.toStringAsFixed(1) : '—',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        if (releaseDate != null && releaseDate!.isNotEmpty)
+                          Text(
+                            releaseDate!,
+                            style: const TextStyle(color: Colors.white70),
+                          ),
                       ],
                     ),
-                    const SizedBox(height: 10),
-                    Row( 
-                      children: [
-                        ... List.generate(genre.length, (index) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 5.0),
-                            child: Text(genre[index]),
-                          );
-                        
-                        }),
-                        
-                      ],
-                    )
+                    if (genre.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        genre.take(3).join(' • '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

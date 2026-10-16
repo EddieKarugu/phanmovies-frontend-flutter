@@ -10,6 +10,7 @@ class Movie {
   final List<int> genreIds;
   final List<String> genres;
 
+
   Movie({
     required this.id,
     required this.title,
